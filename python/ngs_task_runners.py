@@ -28,6 +28,7 @@ def codon_aligner (in_path, out_path, node, ref = 'HXB2_prrt'):
         return bam_out, discards
 
     command = ['bealign', '-r', ref, '-e', '0.5', '-m', 'HIV_BETWEEN_F', '-D', discards, '-R', in_path, bam_out ]
+    print('RUNNING:', ' '.join(command))
     try:
         subprocess.check_call (command, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
@@ -43,9 +44,15 @@ def bam_to_fasta (in_path, out_path):
         return msa_out
     try:
         print ("Running samtools sort on %s to %s" % (in_path,sorted_bam), file = sys.stderr)
-        subprocess.check_call (['samtools', 'sort', in_path, sorted_bam],stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+        command = ['samtools', 'sort', in_path, sorted_bam]
+        print('RUNNING:', ' '.join(command))
+        subprocess.check_call (command,stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+
         shutil.move (sorted_bam + ".bam", in_path)
-        subprocess.check_call (['bam2msa', in_path, msa_out],stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+
+        print('RUNNING:', ' '.join(command))
+        command = ['bam2msa', in_path, msa_out]
+        subprocess.check_call (command, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         print ('ERROR: bam2msa call failed failed',e,file = sys.stderr)
         return None
@@ -63,7 +70,9 @@ def get_tn93 (in_path, out_path, delimiter, node ):
 
         with open (tn93out, "w") as json_file:
             with open (histogram_out, "w") as out_file:
-                subprocess.check_call (['tn93', '-t', str(0.01), '-c', '-d', delimiter, '-q', in_path], stdout = json_file, stderr = out_file)
+                command = ['tn93', '-t', str(0.01), '-c', '-d', delimiter, '-q', in_path]
+                print('RUNNING:', ' '.join(command))
+                subprocess.check_call (command, stdout = json_file, stderr = out_file)
         return histogram_out
     except subprocess.CalledProcessError as e:
         print ('ERROR: tn93 call failed',e,file = sys.stderr)

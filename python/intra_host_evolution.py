@@ -34,8 +34,11 @@ def realign_the_files (node_to_run_on):
                 fh.writelines (lines)
 
             command = ['bealign', '-r', reference, '-e', '0.5', '-m', 'HIV_BETWEEN_F', out_msa, out_bam ]
+            print('RUNNING:', ' '.join(command))
             subprocess.check_call (command, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
+
             command = ['bam2msa', out_bam, out_msa]
+            print('RUNNING:', ' '.join(command))
             subprocess.check_call (command,stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
 
 
@@ -95,6 +98,7 @@ def run_hyphy_div (node_to_run_on):
 
             print ("Running diversity estimates for %s (node %s)" % (out_file, node_to_run_on), file = sys.stderr)
             command =  ['HYPHYMP', hbf]
+            print('RUNNING:', ' '.join(command))
             process = subprocess.Popen (command, stdin = subprocess.PIPE, stderr = subprocess.PIPE, stdout = subprocess.PIPE)
             out, err = process.communicate (bytes(infile,'UTF-8'))
             err = err.decode('UTF-8')

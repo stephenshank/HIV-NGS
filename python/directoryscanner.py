@@ -125,8 +125,9 @@ def run_sff(base_path, results_path):
         #output .fasta.
 
         try:
-            subprocess.check_call(['sff2fastq', '-o', results_path, base_path])
-
+            command = ['sff2fastq', '-o', results_path, base_path]
+            print('RUNNING:', ' '.join(command))
+            subprocess.check_call(command)
         # If an error occurs, say so and return the path to the output file if
         # possible.
 
@@ -163,19 +164,23 @@ def run_qfilt(in_path, in_qual, results_path, status_path):
 
             try:
                 if in_qual is not None:
+                    command = [
+                        'qfilt', '-F', in_path, in_qual,
+                        '-q', '15', '-l', '50', '-P', '-', '-R', '8', '-j'
+                    ]
+                    print('RUNNING:', ' '.join(command))
                     subprocess.check_call(
-                        [
-                            'qfilt', '-F', in_path, in_qual,
-                            '-q', '15', '-l', '50', '-P', '-', '-R', '8', '-j'
-                        ],
+                        command,
                         stdout=out_file, stderr=json_file
                     )
                 else:
+                    command = [
+                        'qfilt', '-Q', in_path, '-q', '15',
+                        '-l', '50', '-P', '-', '-j', '-R', '8'
+                    ]
+                    print('RUNNING:', ' '.join(command))
                     subprocess.check_call(
-                        [
-                            'qfilt', '-Q', in_path, '-q', '15',
-                            '-l', '50', '-P', '-', '-j', '-R', '8'
-                        ],
+                        command,
                         stdout=out_file, stderr=json_file
                     )
 
@@ -224,16 +229,24 @@ def collapse_translate_reads(in_path, out_path):
     # seqmerge on the translate utility's output.
 
     try:
+        command = ['seqmerge', in_path, merged_out]
+        print('RUNNING:', ' '.join(command))
         subprocess.check_call(
-            ['seqmerge', in_path, merged_out],
+            command,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
+
+        command = ['translate', in_path, translated_prot]
+        print('RUNNING:', ' '.join(command))
         subprocess.check_call(
-            ['translate', in_path, translated_prot],
+            command,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
+
+        command = ['seqmerge', translated_prot, merged_out_prot]
+        print('RUNNING:', ' '.join(command))
         subprocess.check_call(
-            ['seqmerge', translated_prot, merged_out_prot],
+            command,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         os.remove(translated_prot)
@@ -285,7 +298,9 @@ def count_collapsed_reads(in_path, out_path, node):
                 #]
             #)
         #)
-        process = subprocess.Popen (['seqcoverage', '-o', merged_json, '-t', 'protein', in_path], stdout = subprocess.DEVNULL, stderr = subprocess.PIPE, stdin = subprocess.DEVNULL, universal_newlines = True)
+        command = ['seqcoverage', '-o', merged_json, '-t', 'protein', in_path]
+        print('RUNNING:', ' '.join(command))
+        process = subprocess.Popen (command, stdout = subprocess.DEVNULL, stderr = subprocess.PIPE, stdin = subprocess.DEVNULL, universal_newlines = True)
         ignored, json_out = process.communicate ()
         json_out = json.loads (json_out);
     # If an error occurs, say so.
@@ -326,14 +341,16 @@ def multinomial_filter(in_path, out_path, node):
         print("Running multinomial filter on %s(node = %d) " % (in_path, node), file=sys.stderr)
         #-t 0.005 -p 0.999999 -f results/Ionxpress020/filtered.msa
         #-j results/Ionxpress020/rates.json results/Ionxpress020/aligned.msa
+        command = [
+            os.path.join(
+                path_to_this_file, "../julia/mcmc.jl"
+            ),
+            '-t', '0.005', '-p', '0.999', '-f', filtered_out, '-j',
+            json_out, in_path
+        ]
+        print('RUNNING:', ' '.join(command))
         subprocess.check_call(
-            [
-                os.path.join(
-                    path_to_this_file, "../julia/mcmc.jl"
-                ),
-                '-t', '0.005', '-p', '0.999', '-f', filtered_out, '-j',
-                json_out, in_path
-            ],
+            command,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
 
@@ -374,12 +391,14 @@ def check_compartmenalization(in_paths, node, delimiter = ':', replicates=100, s
         # F_ST.
 
         status = 'Running initial F_ST'
+        command = [
+            'tn93', '-t',
+            str(0.01), '-l', str(min_overlap), '-c', '-d', delimiter, '-q', '-m', '-u',
+            str(subset), '-s', in_paths[0][0], in_paths[1][0]
+        ]
+        print('RUNNING:', ' '.join(command))
         process = subprocess.Popen(
-            [
-                'tn93', '-t',
-                str(0.01), '-l', str(min_overlap), '-c', '-d', delimiter, '-q', '-m', '-u',
-                str(subset), '-s', in_paths[0][0], in_paths[1][0]
-            ],
+            command,
             stdin=subprocess.DEVNULL, stderr=subprocess.PIPE,
             stdout=subprocess.PIPE, universal_newlines=True
         )
@@ -403,12 +422,14 @@ def check_compartmenalization(in_paths, node, delimiter = ':', replicates=100, s
             # for the current replicate.
 
             status = 'Running replicate %d' % k
+            command = [
+                'tn93', '-t',
+                str(0.01), '-l', str(min_overlap), '-c', '-b', '-q', '-d', delimiter, '-m',
+                '-u', str(subset), '-s', in_paths[0][0], in_paths[1][0]
+            ]
+            print('RUNNING:', ' '.join(command))
             process = subprocess.Popen(
-                [
-                    'tn93', '-t',
-                    str(0.01), '-l', str(min_overlap), '-c', '-b', '-q', '-d', delimiter, '-m',
-                    '-u', str(subset), '-s', in_paths[0][0], in_paths[1][0]
-                ],
+                command,
                 stdin=subprocess.DEVNULL, stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE, universal_newlines=True
             )
@@ -487,14 +508,15 @@ def extract_diagnostic_region(in_path, out_path, node, start=0, end=1000000, cov
 
         # Use bpsh to apply selectreads to the input .msa file.
 
-        call_array = [
+        command = [
             'selectreads', '-o',
             merged_out, '-a', 'gaponly', '-s', str(start), '-e', str(end), '-c',
             str(cov), in_path
         ]
+        print('RUNNING:', ' '.join(command))
         #print(call_array)
         subprocess.check_call(
-            call_array, stdout=subprocess.DEVNULL,
+            command, stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
 
@@ -553,14 +575,15 @@ def collapse_diagnostic_region(in_path_list, out_path, node, overlap=100, count=
                     "Collapsing diagnostic region(overlap %d, count = %d) for %s(node %d) " % (overlap, count, in_path, node),
                     file=sys.stderr
                 )
-                call_array = [
+                command = [
                     'readreduce',
                     '-o', merged_out, '-l', str(overlap), '-s', str(count),
                     in_path
                 ]
+                print('RUNNING:', ' '.join(command))
                 #print(call_array)
                 subprocess.check_call(
-                    call_array, stdout=subprocess.DEVNULL,
+                    command, stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
                 #subprocess.check_call(call_array, stdout=subprocess.DEVNULL)
@@ -766,10 +789,11 @@ def run_tropism_prediction(env_gene, out_path, node):
 
                 # Use bpsh to call idepi on the input env_gene and the V3 model.
 
-                call_array = [
+                command = [
                     '/opt/share/python3.3/idepi',
                     'predict', v3_model, env_gene
                 ]
+                print('RUNNING:', ' '.join(command))
             #print(call_array)
                 subprocess.check_call(
                     call_array, stdout=json_out, stderr=subprocess.DEVNULL
@@ -870,10 +894,12 @@ def process_diagnostic_region(in_path_list, out_path, node):
         print("Running diversity estimates on %s(node %d)" % (in_path, node), file=sys.stderr)
         try:
             in_file = os.path.join(path_to_this_file, in_path)
+            command = [
+                'HYPHYMP', local_file
+            ]
+            print('RUNNING:', ' '.join(command))
             process = subprocess.Popen(
-                [
-                    'HYPHYMP', local_file
-                ],
+                command,
                 stdin=subprocess.PIPE, stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE
             )
@@ -1320,8 +1346,10 @@ def main(directory, results_dir, directory_structure, scan_q_filt, force_these_s
                 full_file = base_path + ".zip"
                 print("Unzipping %s " % full_file)
                 try:
+                    command = ['/usr/bin/unzip', '-n', '-d', root, '-j', full_file]
+                    print('RUNNING:', ' '.join(command))
                     subprocess.check_call(
-                        ['/usr/bin/unzip', '-n', '-d', root, '-j', full_file]
+                       command
                     )
                     os.remove(full_file)
                 except subprocess.CalledProcessError as err:
