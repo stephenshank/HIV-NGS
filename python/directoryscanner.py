@@ -125,7 +125,7 @@ def run_sff(base_path, results_path):
         #output .fasta.
 
         try:
-            subprocess.check_call(['/usr/local/bin/sff2fastq', '-o', results_path, base_path])
+            subprocess.check_call(['sff2fastq', '-o', results_path, base_path])
 
         # If an error occurs, say so and return the path to the output file if
         # possible.
@@ -165,7 +165,7 @@ def run_qfilt(in_path, in_qual, results_path, status_path):
                 if in_qual is not None:
                     subprocess.check_call(
                         [
-                            '/usr/local/bin/qfilt', '-F', in_path, in_qual,
+                            'qfilt', '-F', in_path, in_qual,
                             '-q', '15', '-l', '50', '-P', '-', '-R', '8', '-j'
                         ],
                         stdout=out_file, stderr=json_file
@@ -173,7 +173,7 @@ def run_qfilt(in_path, in_qual, results_path, status_path):
                 else:
                     subprocess.check_call(
                         [
-                            '/usr/local/bin/qfilt', '-Q', in_path, '-q', '15',
+                            'qfilt', '-Q', in_path, '-q', '15',
                             '-l', '50', '-P', '-', '-j', '-R', '8'
                         ],
                         stdout=out_file, stderr=json_file
@@ -225,15 +225,15 @@ def collapse_translate_reads(in_path, out_path):
 
     try:
         subprocess.check_call(
-            ['/opt/share/python3.3/seqmerge', in_path, merged_out],
+            ['seqmerge', in_path, merged_out],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         subprocess.check_call(
-            ['/opt/share/python3.3/translate', in_path, translated_prot],
+            ['translate', in_path, translated_prot],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         subprocess.check_call(
-            ['/opt/share/python3.3/seqmerge', translated_prot, merged_out_prot],
+            ['seqmerge', translated_prot, merged_out_prot],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
         os.remove(translated_prot)
@@ -280,12 +280,12 @@ def count_collapsed_reads(in_path, out_path, node):
         #print(
             #' '.join(
                 #[
-                    #'/usr/bin/bpsh', str(node), '/usr/local/bin/seqcoverage',
+                    #'/usr/bin/bpsh', str(node), '/seqcoverage',
                     #'-o', merged_json, '-t', 'protein', in_path
                 #]
             #)
         #)
-        process = subprocess.Popen (['/usr/bin/bpsh', str(node), '/usr/local/bin/seqcoverage', '-o', merged_json, '-t', 'protein', in_path], stdout = subprocess.DEVNULL, stderr = subprocess.PIPE, stdin = subprocess.DEVNULL, universal_newlines = True)
+        process = subprocess.Popen (['seqcoverage', '-o', merged_json, '-t', 'protein', in_path], stdout = subprocess.DEVNULL, stderr = subprocess.PIPE, stdin = subprocess.DEVNULL, universal_newlines = True)
         ignored, json_out = process.communicate ()
         json_out = json.loads (json_out);
     # If an error occurs, say so.
@@ -328,7 +328,7 @@ def multinomial_filter(in_path, out_path, node):
         #-j results/Ionxpress020/rates.json results/Ionxpress020/aligned.msa
         subprocess.check_call(
             [
-                '/usr/bin/bpsh', str(node), os.path.join(
+                os.path.join(
                     path_to_this_file, "../julia/mcmc.jl"
                 ),
                 '-t', '0.005', '-p', '0.999', '-f', filtered_out, '-j',
@@ -376,7 +376,7 @@ def check_compartmenalization(in_paths, node, delimiter = ':', replicates=100, s
         status = 'Running initial F_ST'
         process = subprocess.Popen(
             [
-                '/usr/bin/bpsh', str(node), '/usr/local/bin/tn93', '-t',
+                'tn93', '-t',
                 str(0.01), '-l', str(min_overlap), '-c', '-d', delimiter, '-q', '-m', '-u',
                 str(subset), '-s', in_paths[0][0], in_paths[1][0]
             ],
@@ -405,7 +405,7 @@ def check_compartmenalization(in_paths, node, delimiter = ':', replicates=100, s
             status = 'Running replicate %d' % k
             process = subprocess.Popen(
                 [
-                    '/usr/bin/bpsh', str(node), '/usr/local/bin/tn93', '-t',
+                    'tn93', '-t',
                     str(0.01), '-l', str(min_overlap), '-c', '-b', '-q', '-d', delimiter, '-m',
                     '-u', str(subset), '-s', in_paths[0][0], in_paths[1][0]
                 ],
@@ -488,7 +488,7 @@ def extract_diagnostic_region(in_path, out_path, node, start=0, end=1000000, cov
         # Use bpsh to apply selectreads to the input .msa file.
 
         call_array = [
-            '/usr/bin/bpsh', str(node), '/usr/local/bin/selectreads', '-o',
+            'selectreads', '-o',
             merged_out, '-a', 'gaponly', '-s', str(start), '-e', str(end), '-c',
             str(cov), in_path
         ]
@@ -554,7 +554,7 @@ def collapse_diagnostic_region(in_path_list, out_path, node, overlap=100, count=
                     file=sys.stderr
                 )
                 call_array = [
-                    '/usr/bin/bpsh', str(node), '/usr/local/bin/readreduce',
+                    'readreduce',
                     '-o', merged_out, '-l', str(overlap), '-s', str(count),
                     in_path
                 ]
@@ -718,7 +718,8 @@ def extract_and_collapse_well_covered_region(in_path, out_path, node, read_lengt
 # Run tropism prediction. This function takes as its inputs
 
 def run_tropism_prediction(env_gene, out_path, node):
-
+    print("Not running IDEPI!")
+    return None
     # Initialize the result dictionary.
 
     result = {}
@@ -766,7 +767,7 @@ def run_tropism_prediction(env_gene, out_path, node):
                 # Use bpsh to call idepi on the input env_gene and the V3 model.
 
                 call_array = [
-                    '/usr/bin/bpsh', str(node), '/opt/share/python3.3/idepi',
+                    '/opt/share/python3.3/idepi',
                     'predict', v3_model, env_gene
                 ]
             #print(call_array)
@@ -871,7 +872,7 @@ def process_diagnostic_region(in_path_list, out_path, node):
             in_file = os.path.join(path_to_this_file, in_path)
             process = subprocess.Popen(
                 [
-                    '/usr/bin/bpsh', str(node), '/usr/local/bin/HYPHYMP', local_file
+                    'HYPHYMP', local_file
                 ],
                 stdin=subprocess.PIPE, stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE
@@ -1677,7 +1678,8 @@ if __name__ == '__main__':
             )
         return False
 
-    nodes_to_run_on = [int(k) for k in args.node.split(",") if check_node_status (int(k))]
+    #nodes_to_run_on = [int(k) for k in args.node.split(",") if check_node_status (int(k))]
+    nodes_to_run_on = [1]
 
     if len (nodes_to_run_on) == 0:
         print(
