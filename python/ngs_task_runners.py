@@ -50,8 +50,8 @@ def bam_to_fasta (in_path, out_path):
 
         shutil.move (sorted_bam + ".bam", in_path)
 
-        print('RUNNING:', ' '.join(command))
         command = ['bam2msa', in_path, msa_out]
+        print('RUNNING:', ' '.join(command))
         subprocess.check_call (command, stdout = subprocess.DEVNULL, stderr = subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
         print ('ERROR: bam2msa call failed failed',e,file = sys.stderr)
