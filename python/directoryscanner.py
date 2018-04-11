@@ -17,7 +17,7 @@ import threading
 import queue
 import ngs_task_runners as ntr
 from itertools import product, combinations
-
+import pdb
 
 
 
@@ -1034,6 +1034,7 @@ def set_update_json(path, text):
 
 
 def handle_a_gene(base_path, file_results_dir_overall, index, gene, analysis_cache, node, median_read_length, copy_number_delimiter):
+    pdb.set_trace()
 
     # Initialize the global variables and the update_json toggle.
 
